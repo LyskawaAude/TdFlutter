@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import './models/question.dart';
-import 'dart:developer';
 
 void main() {
   runApp(const KGBapp());
@@ -10,12 +10,17 @@ class KGBapp extends StatelessWidget {
   const KGBapp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'KGB',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CounterProvider()),
+      ],
+      child: MaterialApp(
+        title: 'KGB',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: const QuestionsPage(),
       ),
-      home: const QuestionsPage(),
     );
   }
 }
@@ -29,15 +34,32 @@ class QuestionWidget extends StatefulWidget {
   State<QuestionWidget> createState() => _QuestionWidgetState();
 }
 
+class CounterProvider  extends ChangeNotifier {
+  int _countVal = 0;
+  int _questionIndex = 0;
+
+  int get countVal => _countVal;
+  int get questionIndex => _questionIndex;
+
+  void add() {
+    _countVal++;
+  }
+  void addQuestionIndex(){
+    _questionIndex++;
+  }
+}
+
 class _QuestionWidgetState extends State<QuestionWidget> {
   late Question question = widget.question;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String? valeur = '';
   bool _isButtonDisabled = true;
-  int _score = 0;
+
 
   void _validate() {
     if (_formKey.currentState!.validate()) {
+      var index = Provider.of<CounterProvider>(context, listen: false);
+      index.addQuestionIndex();
       if(valeur == '') {
         showDialog(
           context: context,
@@ -60,19 +82,44 @@ class _QuestionWidgetState extends State<QuestionWidget> {
           _isButtonDisabled = true;
         });
       } else if(valeur == question.rightAnswer) {
+        var score = Provider.of<CounterProvider>(context, listen: false);
+        score.add();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bonne réponse')),
+          const SnackBar(content: Text('Bonne réponse'),
+          backgroundColor: Colors.green),
         );
         setState((){
           _isButtonDisabled = false;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mauvaise réponse')),
+          const SnackBar(content: Text('Mauvaise réponse'),
+          backgroundColor: Colors.red),
         );
         setState((){
           _isButtonDisabled = false;
         });
+      }
+      if(index._questionIndex == 4){
+        var score = Provider.of<CounterProvider>(context, listen: false);
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text('Résultat'),
+            content: Text('Ton score : ${score._countVal}'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  child: const Text("Fermer"),
+                ),
+              ),
+            ],
+          ),
+        );
       }
     }
   }
@@ -93,7 +140,6 @@ class _QuestionWidgetState extends State<QuestionWidget> {
           });
         } 
       ));
-      print(_score);
     });
     children.insert(0, Text(question.content));
     children.add(
@@ -127,10 +173,10 @@ class _QuestionsPageState extends State<QuestionsPage> {
  
   @override
   void initState() {
-    questionsList.add(Question (1, "Question 1", '1', ['1', '2', '3', '4']));
-    questionsList.add(Question (2, "Question 2", '2', ['1', '2', '3', '4']));
-    questionsList.add(Question (3, "Question 3", '2', ['1', '2', '3', '4']));
-    questionsList.add(Question (4, "Question 4", '2', ['1', '2', '3', '4']));
+    questionsList.add(Question (1, "Quelle est la devise de l'Union européenne ?", 'Unis dans la diversité', ['Un pour tous, tous pour un', 'Liberté, égalité, fraternité', 'Unis dans la diversité', 'L\'union fait la force']));
+    questionsList.add(Question (2, "Le saturnisme est une maladie due à une intoxication au :", 'Plomb', ['Plomb', 'Fer', 'Cuivre', 'Aluminium']));
+    questionsList.add(Question (3, "Quelle ville française n'est pas située sur le Rhône ?", 'Grenoble', ['Avignon', 'Grenoble', 'Lyon', 'Vienne']));
+    questionsList.add(Question (4, "Lequel de ces fleuves ne coule pas en Russie ?", 'La Vistule', ['La Volga', 'L\'Ienisseï', 'L\'Ob', 'La Vistule']));
   }
 
   @override
